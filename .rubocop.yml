@@ -1,0 +1,12 @@
+Style/StringLiterals:
+  Enabled: true
+  EnforcedStyle: single_quotes
+
+Style/StringLiteralsInInterpolation:
+  Enabled: true
+  EnforcedStyle: single_quotes
+Metrics/ParameterLists:
+  Enabled: false
+
+Layout/LineLength:
+  Max: 120
