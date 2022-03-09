@@ -73,14 +73,23 @@ module VanillaIse
         page_count = 1
         results = []
 
-        response = VanillaIse.client.with { |client| client.send(http_method, endpoint_url, options)&.parsed_response }
+        begin
+          response = VanillaIse.client.with { |client| client.send(http_method, endpoint_url, options)&.parsed_response }
+        rescue ConnectionPool::TimeoutError
+          retry
+        end
+
         if response&.dig('SearchResult')
           results.concat(response&.dig('SearchResult', 'resources'))
           while (page_count += 1) && (next_page = response&.dig('SearchResult', 'nextPage', 'href')) && page_count <= page_limit
             # Grab the url params and update our existing options hash with it
             options[:query].merge!(Hash[URI.decode_www_form(URI.parse(next_page).query)])
+            begin
+              response = VanillaIse.client.with { |client| client.send(http_method, endpoint_url, options)&.parsed_response }
+            rescue ConnectionPool::TimeoutError
+              retry
+            end
 
-            response = VanillaIse.client.with { |client| client.send(http_method, endpoint_url, options)&.parsed_response }
             results.concat(response&.dig('SearchResult', 'resources'))
           end
           results
@@ -88,7 +97,11 @@ module VanillaIse
           response
         end
       when :post, :put, :delete
-        response = VanillaIse.client.with { |client| client.send(http_method, endpoint_url, options) }
+        begin
+          response = VanillaIse.client.with { |client| client.send(http_method, endpoint_url, options) }
+        rescue ConnectionPool::TimeoutError
+          retry
+        end
         JSON.parse(response&.body)
       else
         raise 'Invalid HTTP Method. Only GET, POST, PUT and DELETE are supported.'
