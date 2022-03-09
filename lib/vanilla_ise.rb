@@ -4,6 +4,7 @@ require 'async/queue'
 require 'httparty'
 require 'dry-configurable'
 require 'json'
+require 'connection_pool'
 
 require_relative 'vanilla_ise/version'
 require_relative 'vanilla_ise/exceptions'
@@ -19,14 +20,27 @@ module VanillaIse
   setting :username
   setting :password
   setting :debug, default: false
+  setting :concurrency_limit, default: 10
+
+  class << self
+    attr_accessor :client
+
+    def configure!
+      self.client = ConnectionPool.new(size: VanillaIse.config.concurrency_limit, timeout: 15) { VanillaIse::Base }
+    end
+  end
 
   class Base
     include HTTParty
 
+    class << self
+      attr_accessor :client
+    end
+
     # Because ISE is stupid.
     query_string_normalizer proc { |query|
       query.map do |key, value|
-        [value].flatten.map {|v| "#{key}=#{v}"}.join('&')
+        [value].flatten.map { |v| "#{key}=#{v}" }.join('&')
       end.join('&')
     }
 
@@ -46,6 +60,8 @@ module VanillaIse
       options[:base_uri] = VanillaIse.config.server_url
       options[:debug_output] = $stdout if VanillaIse.config.debug
 
+      VanillaIse.configure! if VanillaIse.client.nil?
+
       case http_method
       when :get
         options[:query] ||= {}
@@ -54,14 +70,15 @@ module VanillaIse
 
         page_count = 1
         results = []
-        response = send(http_method, endpoint_url, options)&.parsed_response
+
+        response = VanillaIse.client.with { |client| client.send(http_method, endpoint_url, options)&.parsed_response }
         if response&.dig('SearchResult')
           results.concat(response&.dig('SearchResult', 'resources'))
           while (page_count += 1) && (next_page = response&.dig('SearchResult', 'nextPage', 'href')) && page_count <= page_limit
             # Grab the url params and update our existing options hash with it
             options[:query].merge!(Hash[URI.decode_www_form(URI.parse(next_page).query)])
 
-            response = send(http_method, endpoint_url, options)&.parsed_response
+            response = VanillaIse.client.with { |client| client.send(http_method, endpoint_url, options)&.parsed_response }
             results.concat(response&.dig('SearchResult', 'resources'))
           end
           results
@@ -69,7 +86,7 @@ module VanillaIse
           response
         end
       when :post, :put, :delete
-        response = send(http_method, endpoint_url, options)
+        response = VanillaIse.client.with { |client| client.send(http_method, endpoint_url, options) }
         JSON.parse(response&.body)
       else
         raise 'Invalid HTTP Method. Only GET, POST, PUT and DELETE are supported.'
