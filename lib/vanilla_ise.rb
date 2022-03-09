@@ -13,6 +13,8 @@ module VanillaIse
   autoload :Object, 'vanilla_ise/object'
   autoload :Endpoint, 'vanilla_ise/endpoint'
   autoload :Filter, 'vanilla_ise/filter'
+  autoload :Profile, 'vanilla_ise/profile'
+  autoload :EndpointGroup, 'vanilla_ise/endpoint_group'
 
   extend Dry::Configurable
 
