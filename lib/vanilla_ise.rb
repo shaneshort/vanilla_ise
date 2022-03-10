@@ -68,7 +68,6 @@ module VanillaIse
       when :get
         options[:query] ||= {}
         options[:query]['size'] = page_size
-        #options[:query] = URI.encode_www_form(options[:query])
 
         page_count = 1
         results = []

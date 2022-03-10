@@ -31,7 +31,7 @@ module VanillaIse
           end
         end
       else
-        response.each { |endpoint| results << new(endpoint['id']) }
+        response.each { |endpoint| results << new(endpoint) }
       end
       results
     end
