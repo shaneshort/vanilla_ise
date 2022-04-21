@@ -19,6 +19,7 @@ module VanillaIse
   extend Dry::Configurable
 
   setting :server_url
+  setting :read_only_url, default: nil
   setting :username
   setting :password
   setting :debug, default: false
@@ -61,6 +62,10 @@ module VanillaIse
       options[:query] = query_params unless query_params.empty?
       options[:base_uri] = VanillaIse.config.server_url
       options[:debug_output] = $stdout if VanillaIse.config.debug
+
+      if http_method == :get && !VanillaIse.config.read_only_url.nil?
+        options[:base_uri] = VanillaIse.config.read_only_url
+      end
 
       VanillaIse.configure! if VanillaIse.client.nil?
 
