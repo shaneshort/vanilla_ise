@@ -102,6 +102,7 @@ module VanillaIse
         end
       when :post, :put, :delete
         begin
+          options[:headers]['Content-Type'] = 'application/json' unless http_method == :delete
           response = VanillaIse.client.with { |client| client.send(http_method, endpoint_url, options) }
         rescue ConnectionPool::TimeoutError
           retry
