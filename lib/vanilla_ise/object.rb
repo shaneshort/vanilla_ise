@@ -9,9 +9,18 @@ module VanillaIse
         OpenStruct.new(obj.map { |key, val| [key, to_ostruct(val)] }.to_h)
       elsif obj.is_a?(Array)
         obj.map { |o| to_ostruct(o) }
-      else # Assumed to be a primitive value
-      obj
+      else
+        # Assumed to be a primitive value
+        obj
       end
+    end
+
+    def persisted?
+      !!id
+    end
+
+    def attributes=(attributes)
+      attributes.each { |k, v| send("#{k}=", v) }
     end
   end
 end

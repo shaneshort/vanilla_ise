@@ -15,6 +15,7 @@ module VanillaIse
   autoload :Filter, 'vanilla_ise/filter'
   autoload :Profile, 'vanilla_ise/profile'
   autoload :EndpointGroup, 'vanilla_ise/endpoint_group'
+  autoload :ConnectionWrapper, 'vanilla_ise/connection_wrapper'
 
   extend Dry::Configurable
 
@@ -29,7 +30,9 @@ module VanillaIse
     attr_accessor :client
 
     def configure!
-      self.client = ConnectionPool.new(size: VanillaIse.config.concurrency_limit, timeout: 15) { VanillaIse::Base }
+      self.client = VanillaIse::ConnectionWrapper.new(size: VanillaIse.config.concurrency_limit, timeout: 15) {
+        VanillaIse::Base
+      }
     end
   end
 
@@ -40,35 +43,27 @@ module VanillaIse
       attr_accessor :client
     end
 
-    # Because ISE is stupid.
-    query_string_normalizer proc { |query|
-      query.map do |key, value|
-        [value].flatten.map { |v| "#{key}=#{v}" }.join('&')
-      end.join('&')
-    }
-
     # @private
     # Inner function, not to be called directly
     def self.make_api_call(endpoint_url, http_method,
-                           body: {},
+                           body: nil,
                            query_params: {},
                            page_limit: Float::INFINITY,
                            page_size: 20)
       options = {
         basic_auth: { username: VanillaIse.config.username, password: VanillaIse.config.password },
-        headers: { 'Accept': 'application/json', },
-        body: body.to_json
+        headers: { 'Accept': 'application/json' },
+        base_uri: VanillaIse.config.server_url
       }
       options[:query] = query_params unless query_params.empty?
-      options[:base_uri] = VanillaIse.config.server_url
       options[:debug_output] = $stdout if VanillaIse.config.debug
+      options[:body] = body.to_json if body
 
       if http_method == :get && !VanillaIse.config.read_only_url.nil?
         options[:base_uri] = VanillaIse.config.read_only_url
       end
 
       VanillaIse.configure! if VanillaIse.client.nil?
-
       case http_method
       when :get
         options[:query] ||= {}
@@ -78,7 +73,7 @@ module VanillaIse
         results = []
 
         begin
-          response = VanillaIse.client.with { |client| client.send(http_method, endpoint_url, options)&.parsed_response }
+          response = VanillaIse.client.with_retry(limit: 5) { |client| client.send(http_method, endpoint_url, options)&.parsed_response }
         rescue ConnectionPool::TimeoutError
           retry
         end
@@ -88,11 +83,7 @@ module VanillaIse
           while (page_count += 1) && (next_page = response&.dig('SearchResult', 'nextPage', 'href')) && page_count <= page_limit
             # Grab the url params and update our existing options hash with it
             options[:query].merge!(Hash[URI.decode_www_form(URI.parse(next_page).query)])
-            begin
-              response = VanillaIse.client.with { |client| client.send(http_method, endpoint_url, options)&.parsed_response }
-            rescue ConnectionPool::TimeoutError
-              retry
-            end
+            response = VanillaIse.client.with_retry { |client| client.send(http_method, endpoint_url, options)&.parsed_response }
 
             results.concat(response&.dig('SearchResult', 'resources'))
           end
@@ -101,13 +92,10 @@ module VanillaIse
           response
         end
       when :post, :put, :delete
-        begin
-          options[:headers]['Content-Type'] = 'application/json' unless http_method == :delete
-          response = VanillaIse.client.with { |client| client.send(http_method, endpoint_url, options) }
-        rescue ConnectionPool::TimeoutError
-          retry
-        end
-        JSON.parse(response&.body)
+        options[:headers]['Content-Type'] = 'application/json' unless http_method == :delete
+        response = VanillaIse.client.with_retry { |client| client.send(http_method, endpoint_url, options) }
+
+        response
       else
         raise 'Invalid HTTP Method. Only GET, POST, PUT and DELETE are supported.'
       end
