@@ -41,6 +41,8 @@ module VanillaIse
 
     class << self
       attr_accessor :client
+      attr_accessor :cookies
+      attr_accessor :csrf_token
     end
 
     # @private
@@ -49,15 +51,18 @@ module VanillaIse
                            body: nil,
                            query_params: {},
                            page_limit: Float::INFINITY,
-                           page_size: 20)
+                           page_size: 20,
+                           headers: {})
+      puts "CSRF Token: #{csrf_token}"
       options = {
         basic_auth: { username: VanillaIse.config.username, password: VanillaIse.config.password },
-        headers: { 'Accept': 'application/json' },
+        headers: { 'Accept': 'application/json' }.merge(headers),
         base_uri: VanillaIse.config.server_url
       }
       options[:query] = query_params unless query_params.empty?
       options[:debug_output] = $stdout if VanillaIse.config.debug
       options[:body] = body.to_json if body
+      options[:headers]['Cookie'] = cookies.to_cookie_string unless cookies.nil?
 
       if http_method == :get && !VanillaIse.config.read_only_url.nil?
         options[:base_uri] = VanillaIse.config.read_only_url
@@ -73,7 +78,21 @@ module VanillaIse
         results = []
 
         begin
-          response = VanillaIse.client.with_retry(limit: 5) { |client| client.send(http_method, endpoint_url, options)&.parsed_response }
+          api_response = VanillaIse.client.with_retry(limit: 5) do |client|
+            client.send(http_method, endpoint_url, options)
+          end
+
+          # initialise the cookie jar if it's currently empty
+          self.cookies ||= HTTParty::CookieHash.new
+          # if we've been given cookies back in the request, store them
+          api_response.get_fields('Set-Cookie')&.each { |c| self.cookies.add_cookies(c) }
+
+          # if we have a CSRF token in the request, store that too.
+          new_csrf_token = api_response.get_fields('X-CSRF-Token')&.first
+          self.csrf_token = new_csrf_token unless new_csrf_token.nil?
+
+          # set the parsed response for later use
+          response = api_response.parsed_response
         rescue ConnectionPool::TimeoutError
           retry
         end
@@ -92,6 +111,7 @@ module VanillaIse
           response
         end
       when :post, :put, :delete
+        options[:headers]['X-CSRF-Token'] = csrf_token unless csrf_token.nil?
         options[:headers]['Content-Type'] = 'application/json' unless http_method == :delete
         response = VanillaIse.client.with_retry { |client| client.send(http_method, endpoint_url, options) }
 
