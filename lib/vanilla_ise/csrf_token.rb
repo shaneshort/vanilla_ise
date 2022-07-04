@@ -11,7 +11,7 @@ module VanillaIse
       end
 
       def refresh!
-        return true unless expired?
+        return token unless expired?
 
         api_response = VanillaIse::Base.dispatch_request('/config/sgt/versioninfo', :get,
                                                          headers: { 'X-CSRF-TOKEN' => 'fetch' })
