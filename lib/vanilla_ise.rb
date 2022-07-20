@@ -92,6 +92,15 @@ module VanillaIse
         client.send(http_method, endpoint_url, options)
       end
 
+      if api_response.code == 403 && api_response.body.include?('CSRF')
+        raise VanillaIse::CSRFRequired, 'CSRF is required but not enabled' unless VanillaIse.config.csrf_enabled
+
+        options[:headers]['X-CSRF-Token'] = VanillaIse::CsrfToken.force_refresh
+        api_response = VanillaIse.client.with_retry(limit: 5) do |client|
+          client.send(http_method, endpoint_url, options)
+        end
+      end
+
       # initialise the cookie jar if it's currently empty
       self.cookies ||= HTTParty::CookieHash.new
       # if we've been given cookies back in the request, store them
@@ -137,7 +146,7 @@ module VanillaIse
       when :post, :put, :delete
         dispatch_request(endpoint_url, http_method, body: body, query_params: query_params, headers: headers)
       else
-        raise 'Invalid HTTP Method. Only GET, POST, PUT and DELETE are supported.'
+        raise UnsupportedFormat, 'Invalid HTTP Method. Only GET, POST, PUT and DELETE are supported.'
       end
     end
 

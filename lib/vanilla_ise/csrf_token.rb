@@ -5,6 +5,12 @@ module VanillaIse
       attr_accessor :token
       attr_accessor :expiry
 
+      def force_refresh
+        expiry = nil
+        refresh!
+        token
+      end
+
       def request_token
         refresh!
         token
