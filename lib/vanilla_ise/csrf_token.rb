@@ -6,8 +6,8 @@ module VanillaIse
       attr_accessor :expiry
 
       def force_refresh
-        expiry = nil
-        refresh!
+        self.expiry = nil
+        refresh!(force: true)
         token
       end
 
@@ -16,8 +16,8 @@ module VanillaIse
         token
       end
 
-      def refresh!
-        return token unless expired?
+      def refresh!(force: false)
+        return token unless force || expired?
 
         api_response = VanillaIse::Base.dispatch_request('/config/sgt/versioninfo', :get,
                                                          headers: { 'X-CSRF-TOKEN' => 'fetch' })
