@@ -88,17 +88,20 @@ module VanillaIse
         raise UnsupportedFormat, "Unsupported HTTP method: #{http_method}"
       end
 
-      api_response = VanillaIse.client.with_retry(limit: 5) do |client|
-        client.send(http_method, endpoint_url, options)
-      end
-
-      if api_response.code == 403 && api_response.body.include?('CSRF')
-        raise VanillaIse::CSRFRequired, 'CSRF is required but not enabled' unless VanillaIse.config.csrf_enabled
-
-        options[:headers]['X-CSRF-Token'] = VanillaIse::CsrfToken.force_refresh
+      begin
+        retry_count ||= 0
         api_response = VanillaIse.client.with_retry(limit: 5) do |client|
           client.send(http_method, endpoint_url, options)
         end
+        raise VanillaIse::CSRFTokenExpired if api_response.code == 403 && api_response.body.include?('CSRF')
+      rescue VanillaIse::CSRFTokenExpired
+        raise VanillaIse::CSRFRequired, 'CSRF is required but not enabled' unless VanillaIse.config.csrf_enabled
+
+        options[:headers]['X-CSRF-Token'] = VanillaIse::CsrfToken.force_refresh
+        retry_count += 1
+        retry unless retry_count >= 1
+
+        raise
       end
 
       # initialise the cookie jar if it's currently empty
