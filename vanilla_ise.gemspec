@@ -26,7 +26,7 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ['lib']
 
-  spec.add_runtime_dependency 'httparty', '~> 0.18.0'
+  spec.add_runtime_dependency 'httparty', '>= 0.18.0'
   spec.add_runtime_dependency 'dry-configurable',  '~> 0.13.0'
   spec.add_runtime_dependency 'async'
   spec.add_runtime_dependency 'connection_pool'
