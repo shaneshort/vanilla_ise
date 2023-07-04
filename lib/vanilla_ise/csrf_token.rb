@@ -1,9 +1,7 @@
 module VanillaIse
   class CsrfToken
     class << self
-
-      attr_accessor :token
-      attr_accessor :expiry
+      attr_accessor :token, :expiry
 
       def force_refresh
         self.expiry = nil
