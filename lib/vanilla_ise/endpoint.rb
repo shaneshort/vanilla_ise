@@ -12,7 +12,7 @@ module VanillaIse
     def self.find_by_mac(mac_address)
       response = search(["mac == #{mac_address}"])&.first
 
-      raise ArgumentError, 'No device Found' if response.nil?
+      raise NotFound, 'No device Found' if response.nil?
 
       response
     end
@@ -58,14 +58,21 @@ module VanillaIse
                                                       ERSEndPoint: to_h.reject { |k, _| k == :link }
                                                     })
 
-        raise ArgumentError, "Failed to save endpoint: #{response.inspect}" unless response.code == 200
+        unless response.code == 200
+          raise VanillaIse::InvalidResponse.new(
+            response,
+            message: "Failed to save endpoint: #{response.inspect}")
+        end
       else
         response = VanillaIse::Base.make_api_call('/config/endpoint',
                                                   :post, body:
                                                     {
                                                       ERSEndPoint: to_h.reject { |k, _| k == :link }
                                                     })
-        raise ArgumentError, "Failed to create endpoint: #{response.inspect}" unless response.code == 201
+        unless response.code == 201
+          raise VanillaIse::InvalidResponse.new(response,
+                                                message: "Failed to create endpoint: #{response.inspect}")
+        end
 
         self.id = response.headers['Location'].split('/').last
       end
@@ -74,12 +81,15 @@ module VanillaIse
     end
 
     def destroy
-      raise ArgumentError, 'cannot destroy endpoint unless it has been saved' unless persisted?
+      raise InvalidRequest, 'cannot destroy endpoint unless it has been saved' unless persisted?
 
       response = VanillaIse::Base.make_api_call("/config/endpoint/#{id}",
                                                 :delete)
 
-      raise ArgumentError, "Failed to destroy endpoint: #{response.inspect}" unless response.code == 204
+      unless response.code == 204
+        raise VanillaIse::InvalidResponse.new(response,
+                                              message: "Failed to destroy endpoint: #{response.inspect}")
+      end
 
     end
   end
