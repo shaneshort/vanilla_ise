@@ -1,16 +1,24 @@
+# frozen_string_literal: true
+
 module VanillaIse
   class Filter
     attr_accessor :filter
 
+    # create a new filter
+    # @param [String] filter The filter to apply to the request.
+    # @return [VanillaIse::Filter]
     def initialize(filter = '')
       @filter = filter
       @filter.gsub!(/==/, 'EQ')
       @filter.gsub!(/!=/, 'NE')
-      @filter.gsub!(/\>/, 'GT')
-      @filter.gsub!(/\>/, 'LT')
+      @filter.gsub!(/>/, 'GT')
+      @filter.gsub!(/>/, 'LT')
       @filter.gsub!(/\s+/, '.')
     end
 
+    # This method is used to parse a supplied array of filters.
+    # @param [Array] filters The array of filters to parse.
+    # @return [Hash] The parsed filters.
     def self.parse(filters = [])
       converted_filters = []
       filters.each do |filter|
@@ -18,6 +26,5 @@ module VanillaIse
       end
       { filter: converted_filters }
     end
-
   end
 end
