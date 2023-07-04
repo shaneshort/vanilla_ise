@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
   spec.summary = 'ruby based API for Cisco ISE'
   spec.homepage = 'https://github.com/shaneshort/vanilla_ise'
   spec.license = 'MIT'
-  spec.required_ruby_version = Gem::Requirement.new('>= 2.7.0')
+  spec.required_ruby_version = Gem::Requirement.new('>=  3.0')
 
   spec.metadata['homepage_uri'] = spec.homepage
   spec.metadata['source_code_uri'] = 'https://github.com/shaneshort/vanilla_ise'
@@ -26,8 +26,8 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ['lib']
 
-  spec.add_runtime_dependency 'httparty', '>= 0.18.0'
-  spec.add_runtime_dependency 'dry-configurable',  '~> 0.13.0'
   spec.add_runtime_dependency 'async'
   spec.add_runtime_dependency 'connection_pool'
+  spec.add_runtime_dependency 'dry-configurable',  '~> 0.13.0'
+  spec.add_runtime_dependency 'httparty', '>= 0.18.0'
 end

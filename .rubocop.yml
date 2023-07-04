@@ -1,3 +1,6 @@
+AllCops:
+  TargetRubyVersion: 3.0
+
 Style/StringLiterals:
   Enabled: true
   EnforcedStyle: single_quotes
