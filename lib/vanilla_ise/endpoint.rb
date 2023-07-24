@@ -88,12 +88,11 @@ module VanillaIse
                                                       ERSEndPoint: to_h.reject { |k, _| k == :link }
                                                     })
 
-        unless response.code == 200
-          raise VanillaIse::InvalidResponse.new(
-            response,
-            message: "Failed to save endpoint: #{response.inspect}"
-          )
+        if response.code != 200
+          raise VanillaIse::InvalidResponse.new(response,
+                                                message: "Failed to save: #{response.inspect}")
         end
+
       else
         response = VanillaIse::Base.make_api_call('/config/endpoint',
                                                   :post, body:

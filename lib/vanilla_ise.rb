@@ -59,6 +59,12 @@ module VanillaIse
 
     # @private
     # Do the HTTP Request
+    # @param [String] endpoint_url The URL to send the request to.
+    # @param [Symbol] http_method The HTTP method to use.
+    # @param [Hash] body The body of the request.
+    # @param [Hash] query_params The query parameters for the request.
+    # @param [Hash] headers The headers for the request.
+    # @return [HTTParty::Response] The response from the API.
     def self.dispatch_request(endpoint_url, http_method,
                               body: nil,
                               query_params: {},
@@ -76,12 +82,9 @@ module VanillaIse
       options[:body] = body.to_json if body
       options[:headers]['Cookie'] = cookies.to_cookie_string unless cookies.nil?
 
-      if http_method == :get && !VanillaIse.config.read_only_url.nil?
-        options[:base_uri] = VanillaIse.config.read_only_url
-      end
-
       case http_method
       when :get
+        options[:base_uri] = VanillaIse.config.read_only_url unless VanillaIse.config.read_only_url.nil?
         # noop
       when :post, :put, :delete
         options[:headers]['X-CSRF-Token'] = VanillaIse::CsrfToken.request_token if VanillaIse.config.csrf_enabled
@@ -90,21 +93,7 @@ module VanillaIse
         raise UnsupportedFormat, "Unsupported HTTP method: #{http_method}"
       end
 
-      begin
-        retry_count ||= 0
-        api_response = VanillaIse.client.with_retry(limit: 5) do |client|
-          client.send(http_method, endpoint_url, options)
-        end
-        raise VanillaIse::CSRFTokenExpired if api_response.code == 403 && api_response.body.include?('CSRF')
-      rescue VanillaIse::CSRFTokenExpired
-        raise VanillaIse::CSRFRequired, 'CSRF is required but not enabled' unless VanillaIse.config.csrf_enabled
-
-        options[:headers]['X-CSRF-Token'] = VanillaIse::CsrfToken.force_refresh
-        retry_count += 1
-        retry unless retry_count >= 1
-
-        raise
-      end
+      api_response = dispatch_retryable_request(http_method, endpoint_url, options)
 
       # initialise the cookie jar if it's currently empty
       self.cookies ||= HTTParty::CookieHash.new
@@ -112,6 +101,24 @@ module VanillaIse
       api_response.get_fields('Set-Cookie')&.each { |c| self.cookies.add_cookies(c) }
 
       api_response
+    end
+
+    # @private
+    # Action the http request and handle any retry logic
+    # @param [Symbol] http_method The HTTP method to use
+    # @param [String] endpoint_url The URL to call
+    # @param [Hash] options The options to use
+    # @return [HTTParty::Response] The response from the API
+    def dispatch_retryable_request(http_method, endpoint_url, options = {})
+      retry_count ||= 0
+      api_response = VanillaIse.client.with_retry(limit: 5) { |client| client.send(http_method, endpoint_url, options) }
+      raise VanillaIse::CSRFTokenExpired if api_response.code == 403 && api_response.body.include?('CSRF')
+    rescue VanillaIse::CSRFTokenExpired
+      raise VanillaIse::CSRFRequired, 'CSRF is required but not enabled' unless VanillaIse.config.csrf_enabled
+
+      options[:headers]['X-CSRF-Token'] = VanillaIse::CsrfToken.force_refresh
+      retry_count += 1
+      retry_count >= 1 ? retry : raise
     end
 
     # @private

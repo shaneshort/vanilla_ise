@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 module VanillaIse
+  # A module for converting logical filters into the filter format that ISE Expects
+  # @attr_reader [String] filter The filter to apply to the request.
   class Filter
     attr_accessor :filter
 
