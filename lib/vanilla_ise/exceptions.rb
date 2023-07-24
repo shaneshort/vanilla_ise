@@ -20,11 +20,10 @@ module VanillaIse
   class InvalidResponse < Error
     attr_reader :parsed_response
 
-    def initialize(response, message: 'An unknown error was encountered when submitting the data to Cisco ISE. Please try again.')
+    def initialize(response,
+                   message: 'An unknown error was encountered when submitting the data to Cisco ISE. Please try again.')
       @parsed_response = response.parsed_response
       super(message)
     end
-
   end
-
 end
