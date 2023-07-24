@@ -30,7 +30,7 @@ module VanillaIse
   setting :debug, default: false
   setting :csrf_enabled, default: true
   setting :concurrency_limit, default: 10
-  setting :disable_ssl_verify, default: false
+  setting :ssl_verify, default: true
 
   class << self
     attr_accessor :client
@@ -53,7 +53,7 @@ module VanillaIse
   # This is the base class for all API classes. It provides the basic HTTP methods and settings
   class Base
     include HTTParty
-    default_options.update(verify: !VanillaIse.config.disable_ssl_verify)
+    default_options.update(verify: VanillaIse.config.ssl_verify)
 
     class << self
       attr_accessor :client, :cookies, :csrf_token
