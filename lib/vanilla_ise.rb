@@ -109,7 +109,7 @@ module VanillaIse
     # @param [String] endpoint_url The URL to call
     # @param [Hash] options The options to use
     # @return [HTTParty::Response] The response from the API
-    def dispatch_retryable_request(http_method, endpoint_url, options = {})
+    def self.dispatch_retryable_request(http_method, endpoint_url, options = {})
       retry_count ||= 0
       api_response = VanillaIse.client.with_retry(limit: 5) { |client| client.send(http_method, endpoint_url, options) }
       raise VanillaIse::CSRFTokenExpired if api_response.code == 403 && api_response.body.include?('CSRF')
