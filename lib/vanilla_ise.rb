@@ -30,7 +30,6 @@ module VanillaIse
   setting :debug, default: false
   setting :csrf_enabled, default: true
   setting :concurrency_limit, default: 10
-  setting :ssl_verify, default: true
 
   class << self
     attr_accessor :client
@@ -53,7 +52,6 @@ module VanillaIse
   # This is the base class for all API classes. It provides the basic HTTP methods and settings
   class Base
     include HTTParty
-    default_options.update(verify: VanillaIse.config.ssl_verify)
 
     class << self
       attr_accessor :client, :cookies, :csrf_token
@@ -115,6 +113,8 @@ module VanillaIse
       retry_count ||= 0
       api_response = VanillaIse.client.with_retry(limit: 5) { |client| client.send(http_method, endpoint_url, options) }
       raise VanillaIse::CSRFTokenExpired if api_response.code == 403 && api_response.body.include?('CSRF')
+
+      api_response
     rescue VanillaIse::CSRFTokenExpired
       raise VanillaIse::CSRFRequired, 'CSRF is required but not enabled' unless VanillaIse.config.csrf_enabled
 

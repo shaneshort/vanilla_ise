@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    vanilla_ise (0.1.0)
+    vanilla_ise (0.2.0)
       async
       connection_pool
       dry-configurable (~> 0.13.0)
@@ -15,7 +15,7 @@ GEM
       console (~> 1.10)
       nio4r (~> 2.3)
       timers (~> 4.1)
-    concurrent-ruby (1.1.9)
+    concurrent-ruby (1.2.2)
     connection_pool (2.2.5)
     console (1.14.0)
       fiber-local
@@ -26,16 +26,14 @@ GEM
     dry-core (0.7.1)
       concurrent-ruby (~> 1.0)
     fiber-local (1.0.0)
-    httparty (0.18.1)
-      mime-types (~> 3.0)
+    httparty (0.21.0)
+      mini_mime (>= 1.0.0)
       multi_xml (>= 0.5.2)
     json (2.6.3)
     language_server-protocol (3.17.0.3)
-    mime-types (3.4.1)
-      mime-types-data (~> 3.2015)
-    mime-types-data (3.2022.0105)
+    mini_mime (1.1.2)
     multi_xml (0.6.0)
-    nio4r (2.5.8)
+    nio4r (2.5.9)
     parallel (1.23.0)
     parser (3.2.2.3)
       ast (~> 2.4.1)
