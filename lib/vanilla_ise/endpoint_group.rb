@@ -21,12 +21,12 @@ module VanillaIse
     # @param [Integer] page_size The number of items to return per page.
     # @param [Integer] page_limit The number of pages to return.
     # @param [Boolean] fetch Whether or not to fetch the full endpoint group details.
-    def self.search(filters, page_size: 100, page_limit: Float::INFINITY, fetch: true)
+    def self.search(filters, page_size: 100, page_limit: Float::INFINITY, fetch: true, filter_operator: 'or')
       raise ArgumentError 'No filters provided' if filters.empty?
 
       Base.disable_rails_query_string_format
       params = Filter.parse(filters)
-      params[:filtertype] = 'or'
+      params[:filtertype] = filter_operator
 
       results = []
 

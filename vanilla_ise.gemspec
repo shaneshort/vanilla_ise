@@ -29,5 +29,5 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency 'async'
   spec.add_runtime_dependency 'connection_pool'
   spec.add_runtime_dependency 'dry-configurable', '~> 0.13.0'
-  spec.add_runtime_dependency 'httparty', '>= 0.18.0'
+  spec.add_runtime_dependency 'httparty', '>= 0.19.1'
 end

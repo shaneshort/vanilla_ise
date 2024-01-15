@@ -35,12 +35,12 @@ module VanillaIse
     # @param [Boolean] fetch Whether or not to fetch the full endpoint details.
     # @return [Array<VanillaIse::Endpoint>] An array of endpoints.
     # @raise [ArgumentError] If no filters are provided.
-    def self.search(filters, page_size: 100, page_limit: Float::INFINITY, fetch: true)
+    def self.search(filters, page_size: 100, page_limit: Float::INFINITY, fetch: true, filter_operator: 'or')
       raise ArgumentError, 'No filters provided' if filters.empty?
 
       Base.disable_rails_query_string_format
       params = Filter.parse(filters)
-      params[:filtertype] = 'or'
+      params[:filtertype] = filter_operator
 
       response = Base.make_api_call('/config/endpoint', :get,
                                     query_params: params,
