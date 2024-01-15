@@ -111,7 +111,9 @@ module VanillaIse
     # @return [HTTParty::Response] The response from the API
     def self.dispatch_retryable_request(http_method, endpoint_url, options = {})
       retry_count ||= 0
-      api_response = VanillaIse.client.with_retry(limit: 20) { |client| client.send(http_method, endpoint_url, options) }
+      api_response = VanillaIse.client.with_retry(limit: 20) do |client|
+        client.send(http_method, endpoint_url, options)
+      end
       raise VanillaIse::CSRFTokenExpired if api_response.code == 403 && api_response.body.include?('CSRF')
 
       api_response
