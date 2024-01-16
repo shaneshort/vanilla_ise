@@ -85,7 +85,7 @@ module VanillaIse
         response = VanillaIse::Base.make_api_call("/config/endpoint/#{id}",
                                                   :put, body:
                                                     {
-                                                      ERSEndPoint: to_h.reject { |k, _| k == :link }
+                                                      ERSEndPoint: transform_to_hash.reject { |k, _| k == :link }
                                                     })
 
         if response.code != 200
@@ -97,7 +97,7 @@ module VanillaIse
         response = VanillaIse::Base.make_api_call('/config/endpoint',
                                                   :post, body:
                                                     {
-                                                      ERSEndPoint: to_h.reject { |k, _| k == :link }
+                                                      ERSEndPoint: transform_to_hash.reject { |k, _| k == :link }
                                                     })
         unless response.code == 201
           raise VanillaIse::InvalidResponse.new(response,

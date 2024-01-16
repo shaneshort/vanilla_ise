@@ -44,10 +44,18 @@ module VanillaIse
     # Note: Because this method is recursive, super is used to call an
     # unmodified to_h method (from OpenStruct).
     # @return [Hash] The object as a Hash.
-    def to_h
-      super.transform_values do |value|
-        value.is_a?(OpenStruct) ? value.to_h : value
+    def transform_to_hash(obj = self)
+      obj.to_h.transform_values do |value|
+        case value
+        when Array
+          value.map { |o| transform_to_hash(o) }
+        when OpenStruct
+          transform_to_hash(value)
+        else
+          value
+        end
       end
     end
+
   end
 end
