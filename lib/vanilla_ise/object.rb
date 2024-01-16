@@ -2,6 +2,7 @@
 
 module VanillaIse
   # The base object class for all other objects.
+
   class Object < OpenStruct
     # create a new object
     # @param [Hash] attributes The attributes to initialize the object with.
@@ -35,6 +36,18 @@ module VanillaIse
     # @return [Hash]
     def attributes=(attributes)
       attributes.each { |k, v| send("#{k}=", v) }
+    end
+
+    # This method is used to recursively convert the object to a Hash,
+    # handling nested OpenStructs, which will prevent badly serialised
+    # data being sent to the API.
+    # Note: Because this method is recursive, super is used to call an
+    # unmodified to_h method (from OpenStruct).
+    # @return [Hash] The object as a Hash.
+    def to_h
+      super.transform_values do |value|
+        value.is_a?(OpenStruct) ? value.to_h : value
+      end
     end
   end
 end
